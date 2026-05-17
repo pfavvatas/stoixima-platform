@@ -1,0 +1,9 @@
+# Copy this file to docker-compose.override.yml and fill in your secrets.
+# docker-compose.override.yml is in .gitignore — NEVER commit it.
+
+services:
+  telegram-gateway:
+    environment:
+      - TELEGRAM__APIID=your_api_id_here
+      - TELEGRAM__APIHASH=your_api_hash_here
+      - TELEGRAM__ACCOUNTPHONE=+30691xxxxxxx

@@ -1,0 +1,47 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+launchSettings.json
+
+# Secrets & Sessions
+*.session
+.env
+.env.local
+docker-compose.override.yml
+**/appsettings.Local.json
+**/appsettings.local.json
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# Kubernetes secrets (never commit these)
+**/secret*.yaml
+**/secrets*.yaml
+
+# Claude Code
+.claude/
