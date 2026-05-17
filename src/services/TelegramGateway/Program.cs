@@ -15,8 +15,11 @@ builder.Services.Configure<TelegramOptions>(
 builder.Services.AddKafkaMessaging(builder.Configuration);
 
 // ─── Telegram services ───────────────────────────────────────────────────────
+builder.Services.AddMemoryCache();                          // dedup cache for MessagePublisher
 builder.Services.AddSingleton<ChannelRepository>();
 builder.Services.AddSingleton<MessagePublisher>();
+builder.Services.AddHostedService(sp =>                     // drain loop runs as a hosted service
+    sp.GetRequiredService<MessagePublisher>());
 builder.Services.AddSingleton<UpdatesHandler>();
 
 // ─── Health checks ───────────────────────────────────────────────────────────
