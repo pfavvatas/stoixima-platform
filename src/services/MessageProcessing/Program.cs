@@ -1,0 +1,21 @@
+using Messaging;
+using MessageProcessing.Workers;
+using Prometheus;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ─── Kafka messaging ─────────────────────────────────────────────────────────
+builder.Services.AddKafkaMessaging(builder.Configuration);
+
+// ─── Health checks ───────────────────────────────────────────────────────────
+builder.Services.AddHealthChecks();
+
+// ─── Background worker ───────────────────────────────────────────────────────
+builder.Services.AddHostedService<ProcessingWorker>();
+
+var app = builder.Build();
+
+app.MapHealthChecks("/health");
+app.MapMetrics();
+
+app.Run();
