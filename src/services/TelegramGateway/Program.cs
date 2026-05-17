@@ -2,6 +2,7 @@ using Messaging;
 using Prometheus;
 using TelegramGateway.Configuration;
 using TelegramGateway.Health;
+using TelegramGateway.Services;
 using TelegramGateway.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,11 @@ builder.Services.Configure<TelegramOptions>(
 
 // ─── Kafka messaging ─────────────────────────────────────────────────────────
 builder.Services.AddKafkaMessaging(builder.Configuration);
+
+// ─── Telegram services ───────────────────────────────────────────────────────
+builder.Services.AddSingleton<ChannelRepository>();
+builder.Services.AddSingleton<MessagePublisher>();
+builder.Services.AddSingleton<UpdatesHandler>();
 
 // ─── Health checks ───────────────────────────────────────────────────────────
 builder.Services.AddHealthChecks()

@@ -11,4 +11,8 @@ public class TelegramOptions
     // Path where WTelegramClient stores the session file.
     // Must be on a persistent volume in Kubernetes.
     public string SessionPath  { get; set; } = "/data/session.session";
+
+    // Run in interactive auth mode — needed only on first run to enter OTP.
+    // Set TELEGRAM__SETUPMODE=true, run interactively, then redeploy normally.
+    public bool SetupMode { get; set; }
 }
