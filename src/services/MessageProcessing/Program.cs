@@ -15,6 +15,10 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<TeamCache>());
 
 // ─── Processing services ──────────────────────────────────────────────────────
 builder.Services.AddSingleton<TeamRecognizer>();
+builder.Services.AddSingleton<OcrService>();
+builder.Services.AddSingleton<MatchCorrelator>();
+builder.Services.AddSingleton<TipPersister>();
+builder.Services.AddSingleton<MessageProcessor>();
 
 // ─── Health checks ───────────────────────────────────────────────────────────
 builder.Services.AddHealthChecks();
