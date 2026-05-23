@@ -37,3 +37,27 @@ export interface Channel {
   active: boolean;
   tipCount: number;
 }
+
+export interface ServiceStatus {
+  name: string;
+  status: 'healthy' | 'unhealthy' | 'unreachable';
+  latencyMs: number;
+  checkedAt: string;
+}
+
+export interface AdminStats {
+  activeChannels: number;
+  totalChannels: number;
+  matchesToday: number;
+  tipsToday: number;
+  activesTippersToday: number;
+}
+
+export interface AdminChannel {
+  id: number;        // Telegram chat ID (also the DB primary key)
+  title: string;
+  username: string | null;
+  active: boolean;
+  tipCount: number;
+  addedAt: string;
+}

@@ -161,6 +161,39 @@ services:
     networks:
       - stoixima-net
 
+  # ─── DB Init (runs Postgres + ClickHouse migrations) ─────────────────────────
+
+  db-init:
+    image: alpine:3.19
+    container_name: db-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations:ro
+      - ./scripts:/scripts:ro
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: stoixima
+      DB_USER: stoixima
+      DB_PASS: stoixima_dev
+      CH_HOST: clickhouse
+      CH_PORT: "8123"
+      CH_USER: stoixima
+      CH_PASS: stoixima_dev
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache postgresql-client curl bash
+        bash /scripts/run-migrations.sh
+        bash /scripts/init-clickhouse.sh
+        echo "DB init complete."
+    networks:
+      - stoixima-net
+
   # ─── Application Services ────────────────────────────────────────────────────
 
   telegram-gateway:
@@ -173,6 +206,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "8081:8081"
     environment:
@@ -201,6 +236,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "8082:8081"
     environment:
@@ -224,6 +261,8 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "8083:8081"
     environment:
@@ -244,6 +283,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "8084:8081"
     environment:
@@ -266,6 +307,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "8085:8081"
     environment:
@@ -288,6 +331,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "5000:5000"
     environment:

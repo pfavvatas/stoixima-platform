@@ -42,5 +42,6 @@ public class ApiKeyMiddleware
         path.StartsWithSegments("/health") ||
         path.StartsWithSegments("/metrics") ||
         path.StartsWithSegments("/hubs") ||
-        path.StartsWithSegments("/swagger");
+        path.StartsWithSegments("/swagger") ||
+        path.StartsWithSegments("/admin");
 }

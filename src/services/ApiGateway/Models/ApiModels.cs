@@ -43,3 +43,13 @@ public record ChannelDto
     public bool   Active   { get; init; }
     public int    TipCount { get; init; }
 }
+
+public record AdminChannelDto
+{
+    public long   Id        { get; init; }
+    public string Title     { get; init; } = string.Empty;
+    public string? Username { get; init; }
+    public bool   Active    { get; init; }
+    public int    TipCount  { get; init; }
+    public DateTimeOffset AddedAt { get; init; }
+}

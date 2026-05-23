@@ -7,6 +7,7 @@ using Prometheus;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers();
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 builder.Services.Configure<FootballApiOptions>(

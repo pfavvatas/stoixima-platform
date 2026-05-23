@@ -40,8 +40,14 @@ var redisCs = builder.Configuration.GetConnectionString("Redis")
     ?? throw new InvalidOperationException("Missing Redis connection string.");
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisCs));
 
+// ─── HTTP client (for health checks + action forwarding) ─────────────────────
+builder.Services.AddHttpClient();
+
 // ─── Services ─────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<FeedRepository>();
+builder.Services.AddSingleton<AdminRepository>();
+builder.Services.AddSingleton<ServiceHealthChecker>();
+builder.Services.AddSingleton<ServiceActionClient>();
 
 // ─── Background workers ───────────────────────────────────────────────────────
 builder.Services.AddHostedService<FeedBroadcastWorker>();

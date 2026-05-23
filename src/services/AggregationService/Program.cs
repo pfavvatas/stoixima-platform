@@ -6,6 +6,9 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ─── Controllers ──────────────────────────────────────────────────────────────
+builder.Services.AddControllers();
+
 // ─── Kafka messaging ─────────────────────────────────────────────────────────
 builder.Services.AddKafkaMessaging(builder.Configuration);
 
@@ -25,6 +28,7 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.MapControllers();
 app.MapHealthChecks("/health");
 app.MapMetrics();
 
