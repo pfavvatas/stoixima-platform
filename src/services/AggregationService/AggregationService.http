@@ -1,0 +1,6 @@
+@AggregationService_HostAddress = http://localhost:5073
+
+GET {{AggregationService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
