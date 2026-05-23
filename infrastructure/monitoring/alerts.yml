@@ -1,0 +1,42 @@
+groups:
+  - name: stoixima
+    rules:
+      - alert: KafkaConsumerLagHigh
+        expr: kafka_consumer_group_lag > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka consumer lag > 1000 messages"
+          description: "{{ $labels.topic }} / {{ $labels.consumer_group }} lag: {{ $value }}"
+
+      - alert: TelegramConnectionDown
+        expr: telegram_connections_active == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No active Telegram connections"
+          description: "Telegram Gateway has no active connections for more than 5 minutes"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total[5m]))
+          > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API error rate (> 5%)"
+          description: "Error rate: {{ $value | humanizePercentage }}"
+
+      - alert: ProcessingStalled
+        expr: rate(processing_tips_extracted_total[15m]) == 0 and rate(telegram_gateway_messages_published_total[15m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Message processing appears stalled"
+          description: "Messages are being published to Kafka but no tips are being extracted"
