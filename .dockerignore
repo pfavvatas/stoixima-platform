@@ -1,0 +1,20 @@
+# Build outputs — must be excluded so Docker uses a clean Linux restore,
+# not the Windows-generated project.assets.json which references local VS paths.
+**/bin/
+**/obj/
+
+# Node
+**/node_modules/
+src/frontend/dist/
+
+# Git / IDE
+.git/
+.vs/
+.idea/
+*.user
+
+# Secrets
+**/.env
+**/appsettings.*.json
+!**/appsettings.json
+!**/appsettings.Development.json
