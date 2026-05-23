@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stoixima-prod
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stoixima-dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring

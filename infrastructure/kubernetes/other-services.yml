@@ -1,0 +1,338 @@
+# telegram-gateway, storage-service, aggregation-service, match-data-service, frontend
+
+# ─── Telegram Gateway ─────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegram-gateway
+  namespace: stoixima-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telegram-gateway
+  template:
+    metadata:
+      labels:
+        app: telegram-gateway
+    spec:
+      containers:
+        - name: telegram-gateway
+          image: ghcr.io/pfavvatas/stoixima-platform/telegram-gateway:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://+:8081
+            - name: Kafka__BootstrapServers
+              valueFrom:
+                configMapKeyRef:
+                  name: stoixima-config
+                  key: KAFKA_BOOTSTRAP
+            - name: ConnectionStrings__Postgres
+              value: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=$(POSTGRES_PASSWORD)
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: POSTGRES_PASSWORD
+            - name: Telegram__ApiId
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: TELEGRAM_API_ID
+            - name: Telegram__ApiHash
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: TELEGRAM_API_HASH
+            - name: Telegram__PhoneNumber
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: TELEGRAM_PHONE_NUMBER
+          volumeMounts:
+            - name: session-storage
+              mountPath: /app/sessions
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: session-storage
+          persistentVolumeClaim:
+            claimName: telegram-session-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: telegram-session-pvc
+  namespace: stoixima-prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telegram-gateway
+  namespace: stoixima-prod
+spec:
+  selector:
+    app: telegram-gateway
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+# ─── Storage Service ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-service
+  namespace: stoixima-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage-service
+  template:
+    metadata:
+      labels:
+        app: storage-service
+    spec:
+      containers:
+        - name: storage-service
+          image: ghcr.io/pfavvatas/stoixima-platform/storage-service:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://+:8081
+            - name: Kafka__BootstrapServers
+              valueFrom:
+                configMapKeyRef:
+                  name: stoixima-config
+                  key: KAFKA_BOOTSTRAP
+            - name: ConnectionStrings__Postgres
+              value: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=$(POSTGRES_PASSWORD)
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ConnectionStrings__ClickHouse
+              value: Host=clickhouse;Port=8123;Database=stoixima
+            - name: ConnectionStrings__Redis
+              value: redis:6379
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-service
+  namespace: stoixima-prod
+spec:
+  selector:
+    app: storage-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+# ─── Match Data Service ───────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: match-data-service
+  namespace: stoixima-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: match-data-service
+  template:
+    metadata:
+      labels:
+        app: match-data-service
+    spec:
+      containers:
+        - name: match-data-service
+          image: ghcr.io/pfavvatas/stoixima-platform/match-data-service:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://+:8081
+            - name: FootballApi__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: FOOTBALL_API_KEY
+            - name: ConnectionStrings__Postgres
+              value: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=$(POSTGRES_PASSWORD)
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ConnectionStrings__Redis
+              value: redis:6379
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: match-data-service
+  namespace: stoixima-prod
+spec:
+  selector:
+    app: match-data-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+# ─── Aggregation Service ──────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aggregation-service
+  namespace: stoixima-prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aggregation-service
+  template:
+    metadata:
+      labels:
+        app: aggregation-service
+    spec:
+      containers:
+        - name: aggregation-service
+          image: ghcr.io/pfavvatas/stoixima-platform/aggregation-service:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://+:8081
+            - name: Kafka__BootstrapServers
+              valueFrom:
+                configMapKeyRef:
+                  name: stoixima-config
+                  key: KAFKA_BOOTSTRAP
+            - name: ConnectionStrings__Postgres
+              value: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=$(POSTGRES_PASSWORD)
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stoixima-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ConnectionStrings__Redis
+              value: redis:6379
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aggregation-service
+  namespace: stoixima-prod
+spec:
+  selector:
+    app: aggregation-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: stoixima-prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/pfavvatas/stoixima-platform/frontend:latest
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: stoixima-prod
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80

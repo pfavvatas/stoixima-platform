@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stoixima-config
+  namespace: stoixima-prod
+data:
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: stoixima
+  POSTGRES_USER: stoixima
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  KAFKA_BOOTSTRAP: kafka:29092
+  FOOTBALL_API_BASE_URL: https://api.football-data.org/v4
+  FOOTBALL_API_LEAGUES: PL,PD,SA,BL1,FL1
