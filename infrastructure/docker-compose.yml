@@ -160,6 +160,156 @@ services:
     networks:
       - stoixima-net
 
+  # ─── Application Services ────────────────────────────────────────────────────
+
+  telegram-gateway:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/telegram-gateway/Dockerfile
+    container_name: telegram-gateway
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      ASPNETCORE_URLS: http://+:8081
+      Kafka__BootstrapServers: kafka:29092
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=stoixima_dev
+      Telegram__ApiId: ${TELEGRAM_API_ID}
+      Telegram__ApiHash: ${TELEGRAM_API_HASH}
+      Telegram__PhoneNumber: ${TELEGRAM_PHONE_NUMBER}
+    volumes:
+      - telegram-session:/app/sessions
+    networks:
+      - stoixima-net
+
+  storage-service:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/storage-service/Dockerfile
+    container_name: storage-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8082:8081"
+    environment:
+      ASPNETCORE_URLS: http://+:8081
+      Kafka__BootstrapServers: kafka:29092
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=stoixima_dev
+      ConnectionStrings__ClickHouse: Host=clickhouse;Port=8123;Database=stoixima;Username=stoixima;Password=stoixima_dev
+      ConnectionStrings__Redis: redis:6379
+    networks:
+      - stoixima-net
+
+  message-processing:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/message-processing/Dockerfile
+    container_name: message-processing
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    ports:
+      - "8083:8081"
+    environment:
+      ASPNETCORE_URLS: http://+:8081
+      Kafka__BootstrapServers: kafka:29092
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=stoixima_dev
+      ConnectionStrings__ClickHouse: Host=clickhouse;Port=8123;Database=stoixima;Username=stoixima;Password=stoixima_dev
+    networks:
+      - stoixima-net
+
+  match-data-service:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/match-data-service/Dockerfile
+    container_name: match-data-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8084:8081"
+    environment:
+      ASPNETCORE_URLS: http://+:8081
+      FootballApi__ApiKey: ${FOOTBALL_API_KEY}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=stoixima_dev
+      ConnectionStrings__Redis: redis:6379
+    networks:
+      - stoixima-net
+
+  aggregation-service:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/aggregation-service/Dockerfile
+    container_name: aggregation-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8085:8081"
+    environment:
+      ASPNETCORE_URLS: http://+:8081
+      Kafka__BootstrapServers: kafka:29092
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=stoixima_dev
+      ConnectionStrings__Redis: redis:6379
+    networks:
+      - stoixima-net
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/api-gateway/Dockerfile
+    container_name: api-gateway
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      Kafka__BootstrapServers: kafka:29092
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stoixima;Username=stoixima;Password=stoixima_dev
+      ConnectionStrings__Redis: redis:6379
+      ApiKey: ${API_KEY:-}
+    networks:
+      - stoixima-net
+
+  frontend:
+    build:
+      context: ../src/frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    depends_on:
+      - api-gateway
+    ports:
+      - "3000:80"
+    networks:
+      - stoixima-net
+
   grafana:
     image: grafana/grafana:10.4.0
     container_name: grafana
@@ -191,6 +341,7 @@ volumes:
   redis-data:
   prometheus-data:
   grafana-data:
+  telegram-session:
 
 # ─── Networks ─────────────────────────────────────────────────────────────────
 

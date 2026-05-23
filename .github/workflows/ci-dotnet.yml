@@ -1,0 +1,122 @@
+name: CI — .NET Services
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'src/services/**'
+      - 'src/shared/**'
+      - 'src/tests/**'
+      - '.github/workflows/ci-dotnet.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'src/services/**'
+      - 'src/shared/**'
+      - 'src/tests/**'
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      telegram-gateway: ${{ steps.changes.outputs.telegram-gateway }}
+      storage-service: ${{ steps.changes.outputs.storage-service }}
+      message-processing: ${{ steps.changes.outputs.message-processing }}
+      match-data-service: ${{ steps.changes.outputs.match-data-service }}
+      aggregation-service: ${{ steps.changes.outputs.aggregation-service }}
+      api-gateway: ${{ steps.changes.outputs.api-gateway }}
+      shared: ${{ steps.changes.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            telegram-gateway:
+              - 'src/services/TelegramGateway/**'
+            storage-service:
+              - 'src/services/StorageService/**'
+            message-processing:
+              - 'src/services/MessageProcessing/**'
+              - 'src/tests/MessageProcessing.Tests/**'
+            match-data-service:
+              - 'src/services/MatchDataService/**'
+            aggregation-service:
+              - 'src/services/AggregationService/**'
+            api-gateway:
+              - 'src/services/ApiGateway/**'
+            shared:
+              - 'src/shared/**'
+
+  build-and-test:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: TelegramGateway
+            project: src/services/TelegramGateway/TelegramGateway.csproj
+            condition: ${{ needs.detect-changes.outputs.telegram-gateway == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+          - name: StorageService
+            project: src/services/StorageService/StorageService.csproj
+            condition: ${{ needs.detect-changes.outputs.storage-service == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+          - name: MessageProcessing
+            project: src/services/MessageProcessing/MessageProcessing.csproj
+            test: src/tests/MessageProcessing.Tests/MessageProcessing.Tests.csproj
+            condition: ${{ needs.detect-changes.outputs.message-processing == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+          - name: MatchDataService
+            project: src/services/MatchDataService/MatchDataService.csproj
+            condition: ${{ needs.detect-changes.outputs.match-data-service == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+          - name: AggregationService
+            project: src/services/AggregationService/AggregationService.csproj
+            condition: ${{ needs.detect-changes.outputs.aggregation-service == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+          - name: ApiGateway
+            project: src/services/ApiGateway/ApiGateway.csproj
+            condition: ${{ needs.detect-changes.outputs.api-gateway == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ matrix.condition == 'true' }}
+
+      - name: Setup .NET
+        if: ${{ matrix.condition == 'true' }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        if: ${{ matrix.condition == 'true' }}
+        run: dotnet restore ${{ matrix.project }}
+
+      - name: Build
+        if: ${{ matrix.condition == 'true' }}
+        run: dotnet build ${{ matrix.project }} --no-restore --configuration Release
+
+      - name: Test
+        if: ${{ matrix.condition == 'true' && matrix.test != '' }}
+        run: dotnet test ${{ matrix.test }} --no-build --configuration Release --verbosity normal
+
+  docker-build-check:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - telegram-gateway
+          - storage-service
+          - message-processing
+          - match-data-service
+          - aggregation-service
+          - api-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker build check (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/${{ matrix.service }}/Dockerfile
+          push: false
+          tags: stoixima/${{ matrix.service }}:test
